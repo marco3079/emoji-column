@@ -38,9 +38,11 @@ jobs:
       - name: Handler test (in-process)
         shell: powershell
         run: |
+          # Windows PowerShell reads BOM-less scripts as ANSI: build the emoji from its code point.
+          $emoji = [char]::ConvertFromUtf32(0x1F4B0)
           $f = Join-Path $env:RUNNER_TEMP 'sample2.csv'
           'a,b' | Set-Content $f
-          Set-Content $f -Stream emoji -Value '💰' -Encoding UTF8
+          Set-Content $f -Stream emoji -Value $emoji -Encoding UTF8
           $asm = [Reflection.Assembly]::LoadFrom((Resolve-Path ./dist/EmojiColumn.Handler.dll))
           $h = $asm.CreateInstance('EmojiColumn.Handler.EmojiPropertyHandler')
           if ($h.Initialize($f, 0) -ne 0) { throw 'Initialize failed' }
@@ -49,7 +51,7 @@ jobs:
           $a = @($key, [Activator]::CreateInstance($asm.GetType('EmojiColumn.Handler.PropVariant')))
           [void]$h.GetType().GetMethod('GetValue').Invoke($h, $a)
           $value = [Runtime.InteropServices.Marshal]::PtrToStringUni($a[1].Pointer)
-          if ($value -ne '💰') { throw "handler returned '$value'" }
+          if ($value -ne $emoji) { throw "handler returned '$value'" }
           Write-Host 'Handler test passed'
 
       - uses: actions/upload-artifact@v4
