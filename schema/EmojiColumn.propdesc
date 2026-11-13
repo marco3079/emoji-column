@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Property schema for Emoji Column.
+  Registered with PSRegisterPropertySchema by "EmojiColumn.exe install".
+  formatID/propID must match src/Shared/Ids.cs.
+-->
+<schema xmlns="http://schemas.microsoft.com/windows/2006/propertydescription" schemaVersion="1.0">
+  <propertyDescriptionList publisher="marco3079" product="EmojiColumn">
+    <propertyDescription name="EmojiColumn.Emoji" formatID="{F95F067F-2802-4D52-BCA0-52F0C3630128}" propID="2">
+      <description>Emoji tag attached to the file by Emoji Column.</description>
+      <searchInfo inInvertedIndex="false" isColumn="true" columnIndexType="OnDisk" maxSize="256" />
+      <labelInfo label="Emoji" />
+      <typeInfo type="String" isInnate="true" isViewable="true" isQueryable="true" canStackBy="true" canGroupBy="true" multipleValues="false" />
+      <displayInfo displayType="String" defaultColumnWidth="8" alignment="Center">
+        <drawControl control="Default" />
+      </displayInfo>
+    </propertyDescription>
+  </propertyDescriptionList>
+</schema>

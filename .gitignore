@@ -1,0 +1,16 @@
+# Build output
+dist/
+bin/
+obj/
+*.pdb
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# OS
+Thumbs.db
+desktop.ini

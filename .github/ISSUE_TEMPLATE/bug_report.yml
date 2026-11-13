@@ -1,0 +1,35 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Emoji Column version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: Run `winver`
+      placeholder: "Windows 11 24H2 (26100.1234)"
+    validations:
+      required: true
+  - type: input
+    id: types
+    attributes:
+      label: File type(s) involved
+      placeholder: ".csv, .xlsx"
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots / extra context

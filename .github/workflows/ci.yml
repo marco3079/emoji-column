@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        shell: pwsh
+        run: ./build.ps1 -Zip
+
+      - name: Smoke test (set / get / clear, timestamps preserved)
+        shell: pwsh
+        run: |
+          $f = Join-Path $env:RUNNER_TEMP 'sample.csv'
+          'a,b' | Set-Content $f
+          (Get-Item $f).LastWriteTime = '2020-01-01'
+          $p = Start-Process ./dist/EmojiColumn.exe -ArgumentList @('set', '✅', "`"$f`"") -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "set failed: $($p.ExitCode)" }
+          $value = Get-Content $f -Stream emoji -Encoding UTF8
+          if ($value -ne '✅') { throw "unexpected emoji: '$value'" }
+          if ((Get-Item $f).LastWriteTime -ne [datetime]'2020-01-01') { throw 'Date modified changed' }
+          $p = Start-Process ./dist/EmojiColumn.exe -ArgumentList @('clear', "`"$f`"") -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "clear failed: $($p.ExitCode)" }
+          if (Get-Item $f -Stream emoji -ErrorAction SilentlyContinue) { throw 'stream not removed' }
+          Write-Host 'Smoke test passed'
+
+      - name: Handler test (in-process)
+        shell: powershell
+        run: |
+          $f = Join-Path $env:RUNNER_TEMP 'sample2.csv'
+          'a,b' | Set-Content $f
+          Set-Content $f -Stream emoji -Value '💰' -Encoding UTF8
+          $asm = [Reflection.Assembly]::LoadFrom((Resolve-Path ./dist/EmojiColumn.Handler.dll))
+          $h = $asm.CreateInstance('EmojiColumn.Handler.EmojiPropertyHandler')
+          if ($h.Initialize($f, 0) -ne 0) { throw 'Initialize failed' }
+          $kt = $asm.GetType('EmojiColumn.Handler.PropertyKey')
+          $key = [Activator]::CreateInstance($kt, [guid]'F95F067F-2802-4D52-BCA0-52F0C3630128', [uint32]2)
+          $a = @($key, [Activator]::CreateInstance($asm.GetType('EmojiColumn.Handler.PropVariant')))
+          [void]$h.GetType().GetMethod('GetValue').Invoke($h, $a)
+          $value = [Runtime.InteropServices.Marshal]::PtrToStringUni($a[1].Pointer)
+          if ($value -ne '💰') { throw "handler returned '$value'" }
+          Write-Host 'Handler test passed'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EmojiColumn
+          path: |
+            dist/*.zip
+            dist/*.sha256
