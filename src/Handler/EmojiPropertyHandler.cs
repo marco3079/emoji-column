@@ -23,7 +23,8 @@ namespace EmojiColumn.Handler
     {
         private static readonly PropertyKey EmojiKey = new PropertyKey(Ids.FormatId, Ids.PropertyId);
         private static readonly PropertyKey DescriptionKey = new PropertyKey(Ids.FormatId, Ids.DescriptionPropertyId);
-        private const uint OwnCount = 2;
+        private static readonly PropertyKey IconKey = new PropertyKey(Ids.FormatId, Ids.IconPropertyId);
+        private const uint OwnCount = 3;
 
         private bool _initialized;
         private bool _writable;
@@ -170,7 +171,7 @@ namespace EmojiColumn.Handler
 
         private static bool IsOwn(PropertyKey key)
         {
-            return key.Matches(EmojiKey) || key.Matches(DescriptionKey);
+            return key.Matches(EmojiKey) || key.Matches(DescriptionKey) || key.Matches(IconKey);
         }
 
         public int GetCount(out uint count)
@@ -185,6 +186,7 @@ namespace EmojiColumn.Handler
             uint baseCount = BaseCount;
             if (index == baseCount) { key = EmojiKey; return NativeMethods.S_OK; }
             if (index == baseCount + 1) { key = DescriptionKey; return NativeMethods.S_OK; }
+            if (index == baseCount + 2) { key = IconKey; return NativeMethods.S_OK; }
             if (index > baseCount) return NativeMethods.E_INVALIDARG;
             if (_cachedKeys != null) { key = _cachedKeys[(int)index]; return NativeMethods.S_OK; }
             return _inner.GetAt(index, out key);
@@ -201,6 +203,13 @@ namespace EmojiColumn.Handler
             if (key.Matches(DescriptionKey))
             {
                 value = PropVariant.FromString(_description);
+                return NativeMethods.S_OK;
+            }
+            if (key.Matches(IconKey))
+            {
+                byte[] blob = null;
+                try { blob = IconBlob.For(EmojiPalette.ValueOf(_emoji)); } catch (Exception) { }
+                value = PropVariant.FromBlob(blob);
                 return NativeMethods.S_OK;
             }
             if (_cachedKeys != null)
@@ -228,7 +237,7 @@ namespace EmojiColumn.Handler
                 _descriptionDirty = true;
                 return NativeMethods.S_OK;
             }
-            if (key.Matches(EmojiKey) || _inner == null) return NativeMethods.STG_E_ACCESSDENIED;
+            if (key.Matches(EmojiKey) || key.Matches(IconKey) || _inner == null) return NativeMethods.STG_E_ACCESSDENIED;
             return _inner.SetValue(ref key, ref value);
         }
 
@@ -256,7 +265,7 @@ namespace EmojiColumn.Handler
         public int IsPropertyWritable(ref PropertyKey key)
         {
             if (key.Matches(DescriptionKey)) return NativeMethods.S_OK;
-            if (key.Matches(EmojiKey) || _inner == null) return NativeMethods.S_FALSE;
+            if (key.Matches(EmojiKey) || key.Matches(IconKey) || _inner == null) return NativeMethods.S_FALSE;
             IPropertyStoreCapabilities caps = _inner as IPropertyStoreCapabilities;
             return caps != null ? caps.IsPropertyWritable(ref key) : NativeMethods.S_OK;
         }

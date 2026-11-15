@@ -64,6 +64,7 @@ namespace EmojiColumn.App
 
         // Description
         public static string DescriptionColumn { get { return T("My description", "Minha descrição"); } }
+        public static string EmojiTextColumn { get { return T("Emoji (text)", "Emoji (texto)"); } }
         public static string DescTitle(int count)
         {
             return count == 1
@@ -82,7 +83,7 @@ namespace EmojiColumn.App
                 ? T("Choose an emoji for 1 file", "Escolha um emoji para 1 arquivo")
                 : string.Format(T("Choose an emoji for {0} files", "Escolha um emoji para {0} arquivos"), count);
         }
-        public static string Custom { get { return T("Custom (Win + . opens the emoji panel):", "Personalizado (Win + . abre o painel de emojis):"); } }
+        public static string Custom { get { return T("Custom (Win + . opens the emoji panel; only the emojis above show in color):", "Personalizado (Win + . abre o painel; só os emojis acima aparecem coloridos):"); } }
         public static string Apply { get { return T("Apply", "Aplicar"); } }
         public static string Remove { get { return T("Remove emoji", "Remover emoji"); } }
         public static string Close { get { return T("Close", "Fechar"); } }

@@ -49,14 +49,36 @@ $appArgs += @(
 Invoke-Csc ($appArgs + $shared + $appSrc)
 
 Copy-Item (Join-Path $root 'src\App\App.config') (Join-Path $dist 'EmojiColumn.exe.config') -Force
-Copy-Item (Join-Path $root 'schema\EmojiColumn.propdesc') $dist -Force
+# Color emoji icons (Fluent Emoji, MIT) packed as Win32 resources in a resource-only DLL.
+Write-Host '> EmojiColumn.Icons.dll'
+$res = Join-Path $dist 'EmojiColumn.Icons.res'
+& (Join-Path $root 'tools\New-IconResource.ps1') -SourceDir (Join-Path $root 'assets\emoji') -OutFile $res
+$stub = Join-Path $dist 'IconsStub.cs'
+Set-Content $stub '// Resource-only assembly: holds the color emoji icons drawn in the Emoji column.' -Encoding ascii
+Invoke-Csc @('/nologo', '/target:library', '/optimize+', "/win32res:$res", "/out:$dist\EmojiColumn.Icons.dll", $stub)
+Remove-Item $stub, $res
+
+# Property schema: one <enum> per palette emoji, each pointing at its icon resource.
+$palette = [regex]::Matches([IO.File]::ReadAllText((Join-Path $root 'src\Shared\EmojiPalette.cs')),
+    'new\[\] \{ "([^"]+)", "([^"]+)" \}')
+$iconsDll = Join-Path $dist 'EmojiColumn.Icons.dll'
+$enums = for ($i = 0; $i -lt $palette.Count; $i++) {
+    $value = $i + 1
+    $res = if (Test-Path $iconsDll) { "{INSTALLDIR}\EmojiColumn.Icons.dll,-$(100 + $value)" } else { '%systemroot%\system32\imageres.dll,-1405' }
+    $text = [Security.SecurityElement]::Escape($palette[$i].Groups[1].Value)
+    "          <enum name=`"E$value`" value=`"$value`" text=`"$text`"><image res=`"$res`" /></enum>"
+}
+$schema = [IO.File]::ReadAllText((Join-Path $root 'schema\EmojiColumn.propdesc')).Replace('<!--EMOJI-ENUMS-->', ($enums -join "`r`n").TrimStart())
+[IO.File]::WriteAllText((Join-Path $dist 'EmojiColumn.propdesc'), $schema, (New-Object Text.UTF8Encoding $false))
+Write-Host "> EmojiColumn.propdesc ($($palette.Count) color emojis)"
 Copy-Item (Join-Path $root 'LICENSE') (Join-Path $dist 'LICENSE.txt') -Force
+Copy-Item (Join-Path $root 'THIRD-PARTY-NOTICES.md') (Join-Path $dist 'THIRD-PARTY-NOTICES.txt') -Force
 
 if ($Zip) {
     $version = (Get-Item "$dist\EmojiColumn.exe").VersionInfo.ProductVersion
     $zipPath = Join-Path $dist "EmojiColumn-$version.zip"
     Remove-Item $zipPath -ErrorAction SilentlyContinue
-    $files = 'EmojiColumn.exe', 'EmojiColumn.exe.config', 'EmojiColumn.Handler.dll', 'EmojiColumn.propdesc', 'LICENSE.txt' |
+    $files = 'EmojiColumn.exe', 'EmojiColumn.exe.config', 'EmojiColumn.Handler.dll', 'EmojiColumn.Icons.dll', 'EmojiColumn.propdesc', 'LICENSE.txt', 'THIRD-PARTY-NOTICES.txt' |
         ForEach-Object { Join-Path $dist $_ }
     Compress-Archive -Path $files -DestinationPath $zipPath
     $hash = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()

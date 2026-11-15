@@ -57,6 +57,9 @@ namespace EmojiColumn.App
             }
             catch (Exception e)
             {
+                // Elevated quiet runs have no console: keep the error for the caller / support.
+                try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "EmojiColumn-error.log"), DateTime.Now + " " + command + "\r\n" + e); }
+                catch (Exception) { }
                 if (quiet || command == "set" || command == "clear" || command == "get" || command.EndsWith("-desc") && command != "edit-desc") PrintError(e.Message);
                 else MessageBox.Show(S.Failed + "\n\n" + e.Message, S.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return 1;

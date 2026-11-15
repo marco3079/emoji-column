@@ -11,14 +11,6 @@ namespace EmojiColumn.App
     /// <summary>Small window to pick the emoji for one or more files.</summary>
     internal sealed class PickerForm : Form
     {
-        private static readonly string[] Palette =
-        {
-            "✅", "☑️", "❌", "⚠️", "⏳", "🕒", "📌", "⭐", "🔥", "❗", "❓", "💡",
-            "🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "🟤", "⚫", "⚪", "🟥", "🟩", "🟦",
-            "💰", "💳", "🧾", "📊", "📈", "📉", "🏦", "💵", "📄", "📁", "🗂️", "📝",
-            "🔒", "🔑", "📎", "📦", "🏷️", "🚀", "🎯", "👍", "👎", "❤️", "🗑️", "💤"
-        };
-
         private readonly List<string> _files = new List<string>();
         private readonly Label _title;
         private readonly ListBox _list;
@@ -63,14 +55,17 @@ namespace EmojiColumn.App
 
             FlowLayoutPanel grid = new FlowLayoutPanel();
             grid.Width = 520;
+            grid.MaximumSize = new Size(520, 0);
             grid.AutoSize = true;
             grid.Margin = new Padding(0, 0, 0, 10);
             ToolTip tip = new ToolTip();
-            foreach (string emoji in Palette)
+            for (int i = 0; i < EmojiPalette.Entries.Length; i++)
             {
+                string emoji = EmojiPalette.Entries[i][0];
                 Button b = new Button();
-                b.Text = emoji;
-                b.Font = _emojiFont;
+                Bitmap image = ColorIcons.Load(i + 1, 32);
+                if (image != null) b.Image = image;
+                else { b.Text = emoji; b.Font = _emojiFont; }
                 b.Size = new Size(41, 41);
                 b.Margin = new Padding(1);
                 b.FlatStyle = FlatStyle.Flat;
@@ -87,6 +82,7 @@ namespace EmojiColumn.App
             Label customLabel = new Label();
             customLabel.AutoSize = true;
             customLabel.Text = S.Custom;
+            customLabel.MaximumSize = new Size(520, 0);
             root.Controls.Add(customLabel);
 
             FlowLayoutPanel customRow = new FlowLayoutPanel();

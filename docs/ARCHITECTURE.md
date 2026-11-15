@@ -42,6 +42,24 @@ same file and exposes all of its properties plus `EmojiColumn.Emoji`.
 
 Uninstalling puts the saved CLSID back.
 
+## Color emojis
+
+Explorer draws text columns with GDI, which has no color fonts, so the emoji in
+`EmojiColumn.Emoji` (text) shows in black and white. Color comes from a second
+property, `EmojiColumn.EmojiIcon`, declared with `drawControl="IconList"`:
+
+* Its value (`VT_BLOB`) is a serialized property store (MS-PROPSTORE) holding
+  `System.PropList.StatusIcons = "prop:EmojiColumn.EmojiIndex"`,
+  `System.PropList.StatusIconsDisplayFlag = 2` (icon only) and `EmojiColumn.EmojiIndex = n`.
+  The handler builds it with `PSCreateMemoryPropertyStore` + `IPersistSerializedPropStorage`
+  and caches one blob per emoji.
+* `EmojiColumn.EmojiIndex` is an enumerated `UInt32`; each `<enum>` has an
+  `<image res="…\EmojiColumn.Icons.dll,-1NN" />`. Explorer only accepts Win32 icon
+  resources here, and the list is fixed when the schema is registered.
+* `build.ps1` generates the enumeration from `src/Shared/EmojiPalette.cs` and packs
+  `assets/emoji/NN.png` (Fluent Emoji 3D) into `EmojiColumn.Icons.dll`
+  (`tools/New-IconResource.ps1` writes the `.res`, `csc /win32res` links it).
+
 ## Editing the description in Explorer
 
 `EmojiColumn.Description` is not innate, and the handler reports it as writable in

@@ -61,6 +61,29 @@ namespace EmojiColumn.Handler
             }
         }
 
+        public const ushort VT_UI4 = 19;
+        public const ushort VT_BLOB = 65;
+
+        public static PropVariant FromUInt32(uint value)
+        {
+            PropVariant pv = new PropVariant();
+            pv.VarType = VT_UI4;
+            pv.Int64 = value;
+            return pv;
+        }
+
+        /// <summary>VT_BLOB: { ULONG cbSize; BYTE* pBlobData } right after the 8-byte header.</summary>
+        public static PropVariant FromBlob(byte[] data)
+        {
+            PropVariant pv = new PropVariant();
+            if (data == null || data.Length == 0) return pv;
+            pv.VarType = VT_BLOB;
+            pv.Int64 = data.Length; // cbSize (low 32 bits)
+            pv.Extra = Marshal.AllocCoTaskMem(data.Length); // freed by caller's PropVariantClear
+            Marshal.Copy(data, 0, pv.Extra, data.Length);
+            return pv;
+        }
+
         public static PropVariant FromString(string value)
         {
             PropVariant pv = new PropVariant();
@@ -101,8 +124,25 @@ namespace EmojiColumn.Handler
         [PreserveSig] int Initialize(IStream stream, uint mode);
     }
 
+    [ComImport, Guid("E318AD57-0AA0-450F-ACA5-6FAB7103D917"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IPersistSerializedPropStorage
+    {
+        [PreserveSig] int SetFlags(int flags);
+        [PreserveSig] int SetPropertyStorage(IntPtr storage, uint size);
+        [PreserveSig] int GetPropertyStorage(out IntPtr storage, out uint size);
+    }
+
     internal static class NativeMethods
     {
+        [DllImport("propsys.dll", CharSet = CharSet.Unicode)]
+        public static extern int PSGetPropertyKeyFromName(string name, out PropertyKey key);
+
+        [DllImport("propsys.dll")]
+        public static extern int PSCreateMemoryPropertyStore(ref Guid riid, [MarshalAs(UnmanagedType.IUnknown)] out object store);
+
+        [DllImport("ole32.dll")]
+        public static extern void CoTaskMemFree(IntPtr p);
+
         public const int S_OK = 0;
         public const int S_FALSE = 1;
         public const int E_INVALIDARG = unchecked((int)0x80070057);

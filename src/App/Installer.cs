@@ -20,6 +20,7 @@ namespace EmojiColumn.App
         public const string ExeName = "EmojiColumn.exe";
         public const string HandlerDll = "EmojiColumn.Handler.dll";
         public const string SchemaFile = "EmojiColumn.propdesc";
+        public const string IconsDll = "EmojiColumn.Icons.dll";
 
         private const string HandlerClass = "EmojiColumn.Handler.EmojiPropertyHandler";
         private const string ManagedCategory = "{62C8FE65-4EBB-45E7-B440-6E39B2CDBF29}";
@@ -144,8 +145,9 @@ namespace EmojiColumn.App
             string dir = InstallDir;
             Directory.CreateDirectory(dir);
             string sourceDir = AppDomain.CurrentDomain.BaseDirectory;
-            foreach (string f in new[] { ExeName, HandlerDll, SchemaFile })
+            foreach (string f in new[] { ExeName, HandlerDll, SchemaFile, IconsDll })
             {
+                if (f == IconsDll && !File.Exists(Path.Combine(sourceDir, f))) continue; // optional (dev builds)
                 CopySafe(Path.Combine(sourceDir, f), Path.Combine(dir, f));
             }
             string exe = Path.Combine(dir, ExeName);
@@ -153,7 +155,7 @@ namespace EmojiColumn.App
 
             RegisterComServer(dll);
             string schema = Path.Combine(dir, SchemaFile);
-            LocalizeSchema(schema);
+            PrepareSchema(schema, dir);
             Shell.UnregisterSchema(schema); // re-read labels and new properties on update
             Shell.RegisterSchema(schema);
 
@@ -301,12 +303,19 @@ namespace EmojiColumn.App
             }
         }
 
-        /// <summary>Translates the "My description" column label to the Windows UI language.</summary>
-        private static void LocalizeSchema(string path)
+        /// <summary>
+        /// Points the icon references at the install folder and translates the
+        /// column labels to the Windows UI language.
+        /// </summary>
+        private static void PrepareSchema(string path, string installDir)
         {
-            if (!S.Pt) return;
             string xml = File.ReadAllText(path, System.Text.Encoding.UTF8);
-            xml = xml.Replace("label=\"My description\"", "label=\"" + S.DescriptionColumn + "\"");
+            xml = xml.Replace("{INSTALLDIR}", installDir);
+            if (S.Pt)
+            {
+                xml = xml.Replace("label=\"My description\"", "label=\"" + S.DescriptionColumn + "\"");
+                xml = xml.Replace("label=\"Emoji (text)\"", "label=\"" + S.EmojiTextColumn + "\"");
+            }
             File.WriteAllText(path, xml, new System.Text.UTF8Encoding(true));
         }
 
@@ -363,23 +372,30 @@ namespace EmojiColumn.App
                     root.SetValue("SubCommands", "");
                     root.SetValue("MultiSelectModel", "Player");
 
+                    string icons = Path.Combine(Path.GetDirectoryName(exe), IconsDll);
+                    bool hasIcons = File.Exists(icons);
                     int n = 1;
                     foreach (string[] e in QuickEmojis)
                     {
-                        AddMenuItem(root, n++, e[0] + "   " + (S.Pt ? e[2] : e[1]), q + " set " + e[0] + " \"%1\"", false);
+                        // With the color icon on the item, the label is just the name.
+                        uint value = EmojiPalette.ValueOf(e[0]);
+                        string icon = hasIcons && value > 0 ? ColorIcons.Reference(icons, (int)value) : null;
+                        string label = (icon == null ? e[0] + "   " : "") + (S.Pt ? e[2] : e[1]);
+                        AddMenuItem(root, n++, label, q + " set " + e[0] + " \"%1\"", false, icon);
                     }
-                    AddMenuItem(root, n++, S.MenuChoose, q + " pick \"%1\"", true);
-                    AddMenuItem(root, n++, S.MenuRemove, q + " clear \"%1\"", false);
-                    AddMenuItem(root, n, S.MenuDescription, q + " edit-desc \"%1\"", true);
+                    AddMenuItem(root, n++, S.MenuChoose, q + " pick \"%1\"", true, null);
+                    AddMenuItem(root, n++, S.MenuRemove, q + " clear \"%1\"", false, null);
+                    AddMenuItem(root, n, S.MenuDescription, q + " edit-desc \"%1\"", true, null);
                 }
             }
         }
 
-        private static void AddMenuItem(RegistryKey root, int index, string text, string command, bool separatorBefore)
+        private static void AddMenuItem(RegistryKey root, int index, string text, string command, bool separatorBefore, string icon)
         {
             using (RegistryKey item = root.CreateSubKey(@"shell\" + index.ToString("00")))
             {
                 item.SetValue("MUIVerb", text);
+                if (icon != null) item.SetValue("Icon", icon);
                 if (separatorBefore) item.SetValue("CommandFlags", 0x20, RegistryValueKind.DWord); // ECF_SEPARATORBEFORE
                 using (RegistryKey cmd = item.CreateSubKey("command"))
                 {

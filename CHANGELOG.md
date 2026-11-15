@@ -3,6 +3,15 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-11-15
+
+### Added
+- **Color emojis in Explorer.** The *Emoji* column now draws full-color icons (Fluent Emoji 3D, MIT) for the 48 emojis of the picker, using an `IconList` property backed by `EmojiColumn.Icons.dll`.
+- The picker and the right-click menu show the color icons too.
+
+### Changed
+- The text column is now called *Emoji (text)* / *Emoji (texto)*; *Emoji* is the color column. Add it once via *More…* in the column header menu.
+
 ## [1.1.0] - 2026-11-15
 
 ### Added
@@ -24,5 +33,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Command line: `set`, `get`, `clear`, `pick`, `install`, `uninstall` (with wildcards).
 - English and Portuguese (Brazil) user interface.
 
+[1.2.0]: https://github.com/marco3079/emoji-column/releases/tag/v1.2.0
 [1.1.0]: https://github.com/marco3079/emoji-column/releases/tag/v1.1.0
 [1.0.0]: https://github.com/marco3079/emoji-column/releases/tag/v1.0.0

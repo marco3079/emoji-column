@@ -16,6 +16,12 @@ namespace EmojiColumn
         /// <summary>PID of the editable "My description" property (same FMTID).</summary>
         public const uint DescriptionPropertyId = 3;
 
+        /// <summary>PID of the color icon shown in the "Emoji" column (same FMTID).</summary>
+        public const uint IconPropertyId = 4;
+
+        /// <summary>PID of the enumerated value that selects the icon (see EmojiPalette).</summary>
+        public const uint IconIndexPropertyId = 5;
+
         /// <summary>Registry key (HKLM, 64-bit view) holding install state.</summary>
         public const string ConfigKey = @"SOFTWARE\EmojiColumn";
 
