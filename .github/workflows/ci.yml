@@ -33,6 +33,13 @@ jobs:
           $p = Start-Process ./dist/EmojiColumn.exe -ArgumentList @('clear', "`"$f`"") -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "clear failed: $($p.ExitCode)" }
           if (Get-Item $f -Stream emoji -ErrorAction SilentlyContinue) { throw 'stream not removed' }
+          $p = Start-Process ./dist/EmojiColumn.exe -ArgumentList @('set-desc', '"Paid on 11/10"', "`"$f`"") -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "set-desc failed: $($p.ExitCode)" }
+          $desc = Get-Content $f -Stream description -Encoding UTF8
+          if ($desc -ne 'Paid on 11/10') { throw "unexpected description: '$desc'" }
+          if ((Get-Item $f).LastWriteTime -ne [datetime]'2020-01-01') { throw 'Date modified changed (description)' }
+          $p = Start-Process ./dist/EmojiColumn.exe -ArgumentList @('clear-desc', "`"$f`"") -Wait -PassThru
+          if (Get-Item $f -Stream description -ErrorAction SilentlyContinue) { throw 'description not removed' }
           Write-Host 'Smoke test passed'
 
       - name: Handler test (in-process)

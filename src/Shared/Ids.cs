@@ -13,6 +13,9 @@ namespace EmojiColumn
         public static readonly Guid FormatId = new Guid("F95F067F-2802-4D52-BCA0-52F0C3630128");
         public const uint PropertyId = 2;
 
+        /// <summary>PID of the editable "My description" property (same FMTID).</summary>
+        public const uint DescriptionPropertyId = 3;
+
         /// <summary>Registry key (HKLM, 64-bit view) holding install state.</summary>
         public const string ConfigKey = @"SOFTWARE\EmojiColumn";
 

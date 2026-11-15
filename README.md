@@ -43,6 +43,7 @@ backed by a tiny tag stored inside the file's own NTFS metadata.
 ## Features
 
 - 🧩 **Native column** — appears in *Details* view next to Name, Date, Size. Sort, group (*Group by → Emoji*) and stack by it.
+- 📝 **"My description" column** — free text per file, edited from the right-click menu, in the Details pane (<kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>) or in *Properties → Details*.
 - 🖱️ **Right-click to tag** — *Emoji* submenu with quick emojis, a picker with 48 emojis + any custom one (<kbd>Win</kbd> + <kbd>.</kbd>), and *Remove emoji*.
 - 📚 **Multi-select** — tag a whole selection at once; one picker window for all files.
 - 🕒 **Doesn't touch your files** — the name, the content **and the "Date modified"** stay exactly the same.
@@ -56,7 +57,7 @@ backed by a tiny tag stored inside the file's own NTFS metadata.
 1. Download `EmojiColumn-x.y.z.zip` from the [latest release](https://github.com/marco3079/emoji-column/releases/latest) and extract it anywhere.
 2. Run `EmojiColumn.exe`, review the file types and click **Install / Update** (asks for administrator rights).
 3. Accept the prompt to restart Explorer.
-4. In a folder, right-click a column header → **More…** → tick **Emoji**.
+4. In a folder, right-click a column header → **More…** → tick **Emoji** and **My description**.
 
 > [!TIP]
 > To use the same columns in every folder of the same kind, open *View → Options → View* and click **Apply to Folders**.
@@ -65,7 +66,8 @@ The app copies itself to `C:\Program Files\EmojiColumn` and appears in *Settings
 
 ## Usage
 
-**Explorer:** select one or more files → right-click → **Show more options** → **Emoji** → pick one.
+**Explorer:** select one or more files → right-click → **Show more options** → **Emoji** → pick one, or **Description…** to type a description.
+You can also click the *My description* field in the Details pane (<kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd>) and type.
 
 **Command line:**
 
@@ -74,11 +76,13 @@ EmojiColumn.exe set ✅ .\invoice-2026-11.csv .\card-bill-2026-11.csv
 EmojiColumn.exe get *.csv          # prints "✅  path" for each file (wildcards supported)
 EmojiColumn.exe clear .\invoice-2026-11.csv
 EmojiColumn.exe pick .\report.pdf  # opens the picker
+EmojiColumn.exe set-desc "Paid on 11/10" .\invoice-2026-11.csv
+EmojiColumn.exe clear-desc .\invoice-2026-11.csv
 EmojiColumn.exe install --ext .csv,.pdf,.xlsx --quiet
 EmojiColumn.exe uninstall --quiet
 ```
 
-**PowerShell, no app needed** — the tag is a plain UTF-8 alternate data stream named `emoji`:
+**PowerShell, no app needed** — the tag and the description are plain UTF-8 alternate data streams named `emoji` and `description`:
 
 ```powershell
 Get-Content .\file.csv -Stream emoji
@@ -97,7 +101,7 @@ flowchart LR
     F -- SHChangeNotify --> A
 ```
 
-- `schema/EmojiColumn.propdesc` registers a new Shell property, **`EmojiColumn.Emoji`**, so it shows up in the *Choose Details* list.
+- `schema/EmojiColumn.propdesc` registers two Shell properties, **`EmojiColumn.Emoji`** (read-only) and **`EmojiColumn.Description`** (editable), so they show up in the *Choose Details* list.
 - `EmojiColumn.Handler.dll` is a COM [property handler](https://learn.microsoft.com/windows/win32/properties/property-handlers) registered for the chosen extensions. It reads the `:emoji` stream and passes every other property through to the handler that was there before.
 - `EmojiColumn.exe` is the manager, picker and CLI. It writes the stream, restores the file's timestamps and tells Explorer to refresh.
 

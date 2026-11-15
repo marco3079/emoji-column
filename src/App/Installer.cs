@@ -152,7 +152,10 @@ namespace EmojiColumn.App
             string dll = Path.Combine(dir, HandlerDll);
 
             RegisterComServer(dll);
-            Shell.RegisterSchema(Path.Combine(dir, SchemaFile));
+            string schema = Path.Combine(dir, SchemaFile);
+            LocalizeSchema(schema);
+            Shell.UnregisterSchema(schema); // re-read labels and new properties on update
+            Shell.RegisterSchema(schema);
 
             string[] previous = InstalledExtensions;
             foreach (string ext in previous.Except(exts)) UnregisterExtension(ext);
@@ -250,10 +253,66 @@ namespace EmojiColumn.App
                 }
                 k.SetValue(null, ClsidBraced);
             }
+            RegisterDetails(ext);
+        }
+
+        // Properties shown in the Details pane (Alt+Shift+P) and in Properties > Details,
+        // where "My description" can be edited. Only set when the type has none of its own.
+        private const string PreviewDetails =
+            "prop:EmojiColumn.Emoji;EmojiColumn.Description;System.DateModified;System.Size;System.DateCreated";
+        private const string FullDetails =
+            "prop:System.PropGroup.Description;EmojiColumn.Emoji;EmojiColumn.Description;" +
+            "System.PropGroup.FileSystem;System.ItemNameDisplay;System.ItemTypeText;System.ItemFolderPathDisplay;" +
+            "System.Size;System.DateCreated;System.DateModified;System.DateAccessed;System.FileAttributes;" +
+            "System.OfflineAvailability;System.OfflineStatus;System.SharedWith;System.FileOwner;System.ComputerName";
+
+        private static void RegisterDetails(string ext)
+        {
+            using (RegistryKey hklm = Hklm())
+            using (RegistryKey k = hklm.CreateSubKey(@"SOFTWARE\Classes\SystemFileAssociations\" + ext))
+            using (RegistryKey record = hklm.CreateSubKey(Ids.ConfigKey + @"\Details"))
+            {
+                List<string> set = new List<string>((record.GetValue(ext) as string ?? "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+                foreach (string[] pair in new[] { new[] { "PreviewDetails", PreviewDetails }, new[] { "FullDetails", FullDetails } })
+                {
+                    if (k.GetValue(pair[0]) != null && !set.Contains(pair[0])) continue; // the type has its own list
+                    k.SetValue(pair[0], pair[1]);
+                    if (!set.Contains(pair[0])) set.Add(pair[0]);
+                }
+                if (set.Count > 0) record.SetValue(ext, string.Join(";", set));
+            }
+        }
+
+        private static void UnregisterDetails(string ext)
+        {
+            using (RegistryKey hklm = Hklm())
+            using (RegistryKey record = hklm.OpenSubKey(Ids.ConfigKey + @"\Details", true))
+            {
+                string set = record == null ? null : record.GetValue(ext) as string;
+                if (string.IsNullOrEmpty(set)) return;
+                using (RegistryKey k = hklm.OpenSubKey(@"SOFTWARE\Classes\SystemFileAssociations\" + ext, true))
+                {
+                    if (k != null)
+                    {
+                        foreach (string name in set.Split(';')) k.DeleteValue(name, false);
+                    }
+                }
+                record.DeleteValue(ext, false);
+            }
+        }
+
+        /// <summary>Translates the "My description" column label to the Windows UI language.</summary>
+        private static void LocalizeSchema(string path)
+        {
+            if (!S.Pt) return;
+            string xml = File.ReadAllText(path, System.Text.Encoding.UTF8);
+            xml = xml.Replace("label=\"My description\"", "label=\"" + S.DescriptionColumn + "\"");
+            File.WriteAllText(path, xml, new System.Text.UTF8Encoding(true));
         }
 
         private static void UnregisterExtension(string ext)
         {
+            UnregisterDetails(ext);
             using (RegistryKey hklm = Hklm())
             {
                 string chained = null;
@@ -281,14 +340,14 @@ namespace EmojiColumn.App
 
         private static readonly string[][] QuickEmojis =
         {
-            new[] { "âœ…", "Done", "ConcluÃ­do" },
-            new[] { "â³", "Pending", "Pendente" },
-            new[] { "âš ï¸", "Attention", "AtenÃ§Ã£o" },
-            new[] { "âŒ", "Problem", "Problema" },
-            new[] { "â­", "Important", "Importante" },
-            new[] { "ðŸ”¥", "Urgent", "Urgente" },
-            new[] { "ðŸ’°", "Money", "Financeiro" },
-            new[] { "ðŸ“Œ", "Pinned", "Fixado" },
+            new[] { "\u2705", "Done", "Conclu\u00EDdo" },
+            new[] { "\u23F3", "Pending", "Pendente" },
+            new[] { "\u26A0\uFE0F", "Attention", "Aten\u00E7\u00E3o" },
+            new[] { "\u274C", "Problem", "Problema" },
+            new[] { "\u2B50", "Important", "Importante" },
+            new[] { "\uD83D\uDD25", "Urgent", "Urgente" },
+            new[] { "\uD83D\uDCB0", "Money", "Financeiro" },
+            new[] { "\uD83D\uDCCC", "Pinned", "Fixado" },
         };
 
         private static void RegisterContextMenu(string exe)
@@ -310,7 +369,8 @@ namespace EmojiColumn.App
                         AddMenuItem(root, n++, e[0] + "   " + (S.Pt ? e[2] : e[1]), q + " set " + e[0] + " \"%1\"", false);
                     }
                     AddMenuItem(root, n++, S.MenuChoose, q + " pick \"%1\"", true);
-                    AddMenuItem(root, n, S.MenuRemove, q + " clear \"%1\"", false);
+                    AddMenuItem(root, n++, S.MenuRemove, q + " clear \"%1\"", false);
+                    AddMenuItem(root, n, S.MenuDescription, q + " edit-desc \"%1\"", true);
                 }
             }
         }

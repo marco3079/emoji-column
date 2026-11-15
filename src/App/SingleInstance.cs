@@ -18,10 +18,8 @@ namespace EmojiColumn.App
     internal sealed class SingleInstance : IDisposable
     {
         private static readonly string Suffix = Process.GetCurrentProcess().SessionId.ToString();
-        private static readonly string MutexName = @"Local\EmojiColumn.Picker";
-        private static readonly string PipeName = "EmojiColumn.Picker." + Suffix;
-
         private readonly Mutex _mutex;
+        private readonly string _pipeName;
         private volatile bool _stopped;
 
         private readonly object _lock = new object();
@@ -55,22 +53,24 @@ namespace EmojiColumn.App
             handler(files);
         }
 
-        private SingleInstance(Mutex mutex)
+        private SingleInstance(Mutex mutex, string pipeName)
         {
             _mutex = mutex;
+            _pipeName = pipeName;
         }
 
         /// <summary>
         /// Returns the primary instance, or null when the files were handed to an
         /// already running picker (the caller should then just exit).
         /// </summary>
-        public static SingleInstance TryBecomePrimary(IList<string> files)
+        public static SingleInstance TryBecomePrimary(string channel, IList<string> files)
         {
+            string pipeName = "EmojiColumn." + channel + "." + Suffix;
             bool created;
-            Mutex mutex = new Mutex(true, MutexName, out created);
+            Mutex mutex = new Mutex(true, @"Local\EmojiColumn." + channel, out created);
             if (created)
             {
-                SingleInstance primary = new SingleInstance(mutex);
+                SingleInstance primary = new SingleInstance(mutex, pipeName);
                 Thread t = new Thread(primary.Listen);
                 t.IsBackground = true;
                 t.Start();
@@ -80,7 +80,7 @@ namespace EmojiColumn.App
 
             try
             {
-                using (NamedPipeClientStream client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out))
+                using (NamedPipeClientStream client = new NamedPipeClientStream(".", pipeName, PipeDirection.Out))
                 {
                     client.Connect(3000);
                     byte[] data = Encoding.UTF8.GetBytes(string.Join("\n", files));
@@ -91,7 +91,7 @@ namespace EmojiColumn.App
             catch (Exception)
             {
                 // The primary is closing: show our own picker instead.
-                return new SingleInstance(null);
+                return new SingleInstance(null, pipeName);
             }
         }
 
@@ -101,7 +101,7 @@ namespace EmojiColumn.App
             {
                 try
                 {
-                    using (NamedPipeServerStream server = new NamedPipeServerStream(PipeName, PipeDirection.In,
+                    using (NamedPipeServerStream server = new NamedPipeServerStream(_pipeName, PipeDirection.In,
                                NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Byte))
                     {
                         server.WaitForConnection();

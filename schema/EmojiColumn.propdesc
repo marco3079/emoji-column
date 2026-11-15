@@ -15,5 +15,16 @@
         <drawControl control="Default" />
       </displayInfo>
     </propertyDescription>
+    <!-- The installer translates this label to the Windows UI language. -->
+    <propertyDescription name="EmojiColumn.Description" formatID="{F95F067F-2802-4D52-BCA0-52F0C3630128}" propID="3">
+      <description>Free-text description attached to the file by Emoji Column.</description>
+      <searchInfo inInvertedIndex="false" isColumn="true" columnIndexType="OnDisk" maxSize="4096" />
+      <labelInfo label="My description" />
+      <typeInfo type="String" isInnate="false" isViewable="true" isQueryable="true" canStackBy="false" canGroupBy="true" multipleValues="false" />
+      <displayInfo displayType="String" defaultColumnWidth="30">
+        <drawControl control="Default" />
+        <editControl control="Default" />
+      </displayInfo>
+    </propertyDescription>
   </propertyDescriptionList>
 </schema>

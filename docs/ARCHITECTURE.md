@@ -10,7 +10,7 @@ Emoji Column has three pieces, all built by `build.ps1` with the C# compiler inc
 
 ## Where the emoji is stored
 
-In an NTFS alternate data stream named `emoji` (`file.csv:emoji`), UTF-8, max 256 bytes.
+In NTFS alternate data streams, UTF-8: `file.csv:emoji` (max 256 bytes) and `file.csv:description` (max 4 KB).
 The file's main content is never opened for writing. Because NTFS updates *Date modified*
 when any stream changes, `EmojiStore` saves and restores the timestamps around every write.
 
@@ -41,6 +41,15 @@ same file and exposes all of its properties plus `EmojiColumn.Emoji`.
   alive and receives `SetValue`/`Commit`.
 
 Uninstalling puts the saved CLSID back.
+
+## Editing the description in Explorer
+
+`EmojiColumn.Description` is not innate, and the handler reports it as writable in
+`IPropertyStoreCapabilities`. When Explorer opens the store for writing (Details pane,
+*Properties → Details*), `SetValue` keeps the new text and `Commit` writes the
+`:description` stream. So that the field shows up in those panes, the installer sets
+`PreviewDetails` / `FullDetails` under `HKLM\SOFTWARE\Classes\SystemFileAssociations\<ext>`
+only for types that don't define their own lists, and removes them on uninstall.
 
 ## Writing: the app
 

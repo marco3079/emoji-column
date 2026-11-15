@@ -35,12 +35,14 @@ namespace EmojiColumn.App
                     "1. Open a folder in File Explorer and switch to Details view (View > Details).\n" +
                     "2. Right-click any column header (Name, Date modified…) and choose \"More…\".\n" +
                     "3. Tick \"Emoji\" and click OK. Drag the column where you want it.\n\n" +
-                    "To tag files: right-click them > Show more options > Emoji.\n\n" +
+                    "To tag files: right-click them > Show more options > Emoji.\n" +
+                    "The \"My description\" column works the same way (Emoji > Description…), and can also be edited in the Details pane (Alt+Shift+P).\n\n" +
                     "Tip: to reuse the layout in every folder of the same kind, use View > Options > View > \"Apply to Folders\".",
                     "1. Abra uma pasta no Explorador de Arquivos no modo Detalhes (Exibir > Detalhes).\n" +
                     "2. Clique com o botão direito no cabeçalho de qualquer coluna (Nome, Data de modificação…) e escolha \"Mais…\".\n" +
                     "3. Marque \"Emoji\" e clique em OK. Arraste a coluna para onde quiser.\n\n" +
-                    "Para marcar arquivos: botão direito > Mostrar mais opções > Emoji.\n\n" +
+                    "Para marcar arquivos: botão direito > Mostrar mais opções > Emoji.\n" +
+                    "A coluna \"Minha descrição\" funciona igual (Emoji > Descrição…) e também pode ser editada no painel de detalhes (Alt+Shift+P).\n\n" +
                     "Dica: para usar o mesmo layout em todas as pastas do mesmo tipo, use Opções > Modo de Exibição > \"Aplicar às Pastas\".");
             }
         }
@@ -58,6 +60,20 @@ namespace EmojiColumn.App
         public static string MenuRoot { get { return "Emoji"; } }
         public static string MenuChoose { get { return T("Choose emoji…", "Escolher emoji…"); } }
         public static string MenuRemove { get { return T("Remove emoji", "Remover emoji"); } }
+        public static string MenuDescription { get { return T("Description…", "Descrição…"); } }
+
+        // Description
+        public static string DescriptionColumn { get { return T("My description", "Minha descrição"); } }
+        public static string DescTitle(int count)
+        {
+            return count == 1
+                ? T("Description of 1 file", "Descrição de 1 arquivo")
+                : string.Format(T("Description of {0} files", "Descrição de {0} arquivos"), count);
+        }
+        public static string DescHint { get { return T("Shown in the \"My description\" column. Leave empty to remove.", "Aparece na coluna \"Minha descrição\". Deixe vazio para remover."); } }
+        public static string DescMixed { get { return T("The selected files have different descriptions; saving replaces all of them.", "Os arquivos selecionados têm descrições diferentes; salvar substitui todas."); } }
+        public static string Save { get { return T("Save", "Salvar"); } }
+        public static string Cancel { get { return T("Cancel", "Cancelar"); } }
 
         // Picker
         public static string PickTitle(int count)
@@ -84,7 +100,10 @@ namespace EmojiColumn.App
                        "  EmojiColumn.exe pick  <files...>         open the emoji picker\n" +
                        "  EmojiColumn.exe set   <emoji> <files...> set the emoji\n" +
                        "  EmojiColumn.exe clear <files...>         remove the emoji\n" +
-                       "  EmojiColumn.exe get   <files...>         print the emoji\n" +
+                       "  EmojiColumn.exe get   <files...>         print emoji and description\n" +
+                       "  EmojiColumn.exe set-desc <text> <files...>  set the description\n" +
+                       "  EmojiColumn.exe clear-desc <files...>    remove the description\n" +
+                       "  EmojiColumn.exe edit-desc  <files...>    open the description editor\n" +
                        "  EmojiColumn.exe install [--ext .csv,.pdf] [--quiet]\n" +
                        "  EmojiColumn.exe uninstall [--quiet]\n";
             }

@@ -37,7 +37,29 @@ namespace EmojiColumn.Handler
         [FieldOffset(16)] public IntPtr Extra;
 
         public const ushort VT_EMPTY = 0;
+        public const ushort VT_NULL = 1;
+        public const ushort VT_BSTR = 8;
         public const ushort VT_LPWSTR = 31;
+
+        /// <summary>Reads a string value (VT_LPWSTR / VT_BSTR; VT_EMPTY / VT_NULL give null).</summary>
+        public bool TryGetString(out string value)
+        {
+            value = null;
+            switch (VarType)
+            {
+                case VT_EMPTY:
+                case VT_NULL:
+                    return true;
+                case VT_LPWSTR:
+                    value = Pointer == IntPtr.Zero ? null : Marshal.PtrToStringUni(Pointer);
+                    return true;
+                case VT_BSTR:
+                    value = Pointer == IntPtr.Zero ? null : Marshal.PtrToStringBSTR(Pointer);
+                    return true;
+                default:
+                    return false;
+            }
+        }
 
         public static PropVariant FromString(string value)
         {

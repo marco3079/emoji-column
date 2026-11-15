@@ -35,6 +35,13 @@ namespace EmojiColumn.App
                         return Set(null, Files(rest));
                     case "get":
                         return Get(Files(rest));
+                    case "set-desc":
+                        if (rest.Length < 2) return UsageError();
+                        return SetDescription(rest[0], Files(rest.Skip(1)));
+                    case "clear-desc":
+                        return SetDescription(null, Files(rest));
+                    case "edit-desc":
+                        return EditDescription(Files(rest));
                     case "install":
                         return Install(ParseExtensions(rest), quiet);
                     case "uninstall":
@@ -50,7 +57,7 @@ namespace EmojiColumn.App
             }
             catch (Exception e)
             {
-                if (quiet || command == "set" || command == "clear" || command == "get") PrintError(e.Message);
+                if (quiet || command == "set" || command == "clear" || command == "get" || command.EndsWith("-desc") && command != "edit-desc") PrintError(e.Message);
                 else MessageBox.Show(S.Failed + "\n\n" + e.Message, S.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return 1;
             }
@@ -86,7 +93,7 @@ namespace EmojiColumn.App
 
         private static int Pick(List<string> files)
         {
-            using (SingleInstance instance = SingleInstance.TryBecomePrimary(files))
+            using (SingleInstance instance = SingleInstance.TryBecomePrimary("Picker", files))
             {
                 if (instance == null) return 0; // handed over to the running picker
                 PickerForm form = new PickerForm(files);
@@ -94,6 +101,37 @@ namespace EmojiColumn.App
                 Application.Run(form);
             }
             return 0;
+        }
+
+        private static int EditDescription(List<string> files)
+        {
+            using (SingleInstance instance = SingleInstance.TryBecomePrimary("Description", files))
+            {
+                if (instance == null) return 0; // handed over to the running editor
+                DescriptionForm form = new DescriptionForm(files);
+                instance.OnFilesReceived(form.AddFilesThreadSafe);
+                Application.Run(form);
+            }
+            return 0;
+        }
+
+        private static int SetDescription(string text, List<string> files)
+        {
+            int failed = 0;
+            foreach (string f in files)
+            {
+                try
+                {
+                    EmojiStore.WriteDescription(f, text);
+                    Shell.NotifyItemChanged(f);
+                }
+                catch (Exception e)
+                {
+                    failed++;
+                    PrintError(f + ": " + e.Message);
+                }
+            }
+            return failed == 0 ? 0 : 1;
         }
 
         private static int Set(string emoji, List<string> files)
@@ -118,7 +156,7 @@ namespace EmojiColumn.App
         private static int Get(List<string> files)
         {
             StringWriterHelper sb = new StringWriterHelper();
-            foreach (string f in files) sb.Line((EmojiStore.Read(f) ?? "-") + "\t" + f);
+            foreach (string f in files) sb.Line((EmojiStore.Read(f) ?? "-") + "\t" + f + "\t" + (EmojiStore.ReadDescription(f) ?? ""));
             Print(sb.ToString());
             return 0;
         }
